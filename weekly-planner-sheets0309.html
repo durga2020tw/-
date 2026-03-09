@@ -450,14 +450,63 @@ function setSyncBadge(type, text) {
   badge.style.display = text ? 'inline-block' : 'none';
 }
 
-// ── Save：本機 + 推送到試算表（防抖 1s）────────────────
+// ── Save：本機儲存 + 防抖推送（1s）───────────────────────
 function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   clearTimeout(pushTimer);
   pushTimer = setTimeout(pushToSheets, 1000);
 }
 
-// ── Push to Google Sheets ──────────────────────────────
+// ── 將本機資料結構展平為列陣列 ────────────────────────────
+function flattenData(srcData) {
+  const tasks = [];
+  for (const [date, items] of Object.entries(srcData)) {
+    items.forEach((item, idx) => {
+      tasks.push({
+        date,
+        text: item.text || '',
+        time: item.time || '',
+        done: item.done ? 'TRUE' : 'FALSE',
+        id:   item.id   || `${date}-${idx}`
+      });
+    });
+  }
+  return tasks;
+}
+
+// ── 合併試算表資料與本機資料（以 id 為 key，本機優先）──────
+function mergeData(sheetsData, localData) {
+  // 先把試算表資料轉成 { id -> task } map
+  const sheetsMap = {};
+  for (const [date, items] of Object.entries(sheetsData)) {
+    items.forEach((item, idx) => {
+      const id = item.id || `${date}-${idx}`;
+      sheetsMap[id] = { ...item, date };
+    });
+  }
+
+  // 把本機資料的 id 收集起來
+  const localIds = new Set();
+  for (const items of Object.values(localData)) {
+    items.forEach((item, idx) => {
+      localIds.add(item.id || '');
+    });
+  }
+
+  // 找出試算表有、但本機沒有的項目（在試算表新增的）
+  const merged = JSON.parse(JSON.stringify(localData)); // deep copy
+  for (const [id, task] of Object.entries(sheetsMap)) {
+    if (!localIds.has(id) && id) {
+      // 試算表獨有的項目，加回本機
+      const { date, ...rest } = task;
+      if (!merged[date]) merged[date] = [];
+      merged[date].push(rest);
+    }
+  }
+  return merged;
+}
+
+// ── Push to Google Sheets（先拉取合併，再推送）────────────
 async function pushToSheets() {
   const url = getGasUrl();
   if (!url) return;
@@ -466,32 +515,44 @@ async function pushToSheets() {
   isSyncing = true;
   setSyncBadge('syncing', '同步中…');
 
-  // 展平資料
-  const tasks = [];
-  for (const [date, items] of Object.entries(data)) {
-    items.forEach((item, idx) => {
-      tasks.push({
-        date,
-        text:  item.text  || '',
-        time:  item.time  || '',
-        done:  item.done  ? 'TRUE' : 'FALSE',
-        id:    item.id    || `${date}-${idx}`
-      });
-    });
-  }
-
   try {
-    const res = await fetch(url, {
+    // 步驟1：先拉取試算表最新資料
+    const pullRes  = await fetch(`${url}?action=read`);
+    const pullJson = await pullRes.json();
+
+    if (Array.isArray(pullJson.tasks)) {
+      // 把試算表資料轉回 { date: [tasks] } 格式
+      const sheetsData = {};
+      pullJson.tasks.forEach(t => {
+        if (!t.date) return;
+        if (!sheetsData[t.date]) sheetsData[t.date] = [];
+        sheetsData[t.date].push({
+          text: t.text || '',
+          time: t.time || '',
+          done: t.done === true || t.done === 'TRUE',
+          id:   t.id   || ''
+        });
+      });
+
+      // 步驟2：合併（保留試算表新增的項目）
+      data = mergeData(sheetsData, data);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      render();
+    }
+
+    // 步驟3：將合併後的完整資料推送回試算表
+    const tasks = flattenData(data);
+    const pushRes  = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain' }, // 避免 CORS preflight
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ action: 'write', tasks })
     });
-    const json = await res.json();
-    if (json.success) {
+    const pushJson = await pushRes.json();
+    if (pushJson.success) {
       setSyncBadge('ok', '已同步 ✓');
       setTimeout(() => setSyncBadge('', ''), 3000);
     } else {
-      throw new Error(json.error || 'unknown');
+      throw new Error(pushJson.error || 'unknown');
     }
   } catch (e) {
     setSyncBadge('error', '同步失敗 ✗');
