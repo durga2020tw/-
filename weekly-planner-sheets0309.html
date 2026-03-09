@@ -532,7 +532,15 @@
   <div class="modal">
     <h3>新增事項</h3>
     <input type="text" id="modalText" placeholder="事項名稱" />
-    <input type="text" id="modalTime" placeholder="時間（選填）例：14:00~17:00" />
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+      <select id="modalTimeStart" style="flex:1;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;font-family:'Noto Sans TC',sans-serif;color:var(--ink);outline:none;appearance:none;-webkit-appearance:none;">
+        <option value="">開始（選填）</option>
+      </select>
+      <span style="color:var(--ink-soft);font-size:13px;flex-shrink:0;">～</span>
+      <select id="modalTimeEnd" style="flex:1;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px;font-family:'Noto Sans TC',sans-serif;color:var(--ink);outline:none;appearance:none;-webkit-appearance:none;">
+        <option value="">結束（選填）</option>
+      </select>
+    </div>
     <div class="modal-actions">
       <button class="modal-cancel" onclick="closeModal()">取消</button>
       <button class="modal-ok" onclick="confirmAdd()">新增</button>
@@ -934,7 +942,8 @@ function render() {
     form.querySelector('.add-btn').onclick = () => {
       pendingDayIndex = key;
       document.getElementById('modalText').value = inp.value.trim();
-      document.getElementById('modalTime').value = '';
+      document.getElementById('modalTimeStart').value = '';
+        document.getElementById('modalTimeEnd').value = '';
       inp.value = '';
       openModal();
     };
@@ -970,8 +979,10 @@ function closeModal() {
 }
 
 function confirmAdd() {
-  const text = document.getElementById('modalText').value.trim();
-  const time = document.getElementById('modalTime').value.trim();
+  const text  = document.getElementById('modalText').value.trim();
+  const start = document.getElementById('modalTimeStart').value;
+  const end   = document.getElementById('modalTimeEnd').value;
+  const time  = start && end ? start + '~' + end : (start || end || '');
   if (!text || !pendingDayIndex) { closeModal(); return; }
   if (!data[pendingDayIndex]) data[pendingDayIndex] = [];
   data[pendingDayIndex].push({ text, time, done: false });
@@ -985,7 +996,7 @@ function changeWeek(dir) {
   renderTop3();
 }
 
-document.getElementById('modalTime').addEventListener('keydown', e => { if (e.key==='Enter') confirmAdd(); });
+
 document.getElementById('modalOverlay').addEventListener('click', e => {
   if (e.target===document.getElementById('modalOverlay')) closeModal();
 });
@@ -1112,7 +1123,30 @@ function renderTop3() {
   document.getElementById('top3Progress').textContent = `${doneCount} / 3 完成`;
 }
 
+
+// ── 產生時間選項（每30分鐘）────────────────────────────────
+function populateTimeSelects() {
+  const selects = ['modalTimeStart', 'modalTimeEnd'];
+  const times = [];
+  for (let h = 6; h <= 23; h++) {
+    for (let m of [0, 30]) {
+      const hh = String(h).padStart(2, '0');
+      const mm = String(m).padStart(2, '0');
+      times.push(`${hh}:${mm}`);
+    }
+  }
+  selects.forEach(id => {
+    const sel = document.getElementById(id);
+    times.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t;
+      opt.textContent = t;
+      sel.appendChild(opt);
+    });
+  });
+}
 // ── Init ───────────────────────────────────────────────
+populateTimeSelects();
 initSetupBanner();
 render();
 renderTop3();
