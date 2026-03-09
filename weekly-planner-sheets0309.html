@@ -977,12 +977,25 @@ async function pushTop3ToSheets(weekKey, goals) {
   clearTimeout(top3PushTimer);
   top3PushTimer = setTimeout(async () => {
     try {
-      await fetch(url, {
+      setSyncBadge('syncing', '同步中…');
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({ action: 'writeTop3', week: weekKey, goals })
       });
-    } catch(e) { console.warn('top3 push failed', e); }
+      const json = await res.json();
+      console.log('[top3 push] 回應:', JSON.stringify(json));
+      if (json.success) {
+        setSyncBadge('ok', '已同步 ✓');
+        setTimeout(() => setSyncBadge('', ''), 2500);
+      } else {
+        setSyncBadge('error', '同步失敗: ' + (json.error || '未知'));
+        console.error('[top3 push] 錯誤:', json.error);
+      }
+    } catch(e) {
+      setSyncBadge('error', '同步失敗 ✗');
+      console.error('[top3 push] fetch 失敗:', e);
+    }
   }, 800);
 }
 
