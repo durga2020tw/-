@@ -740,6 +740,7 @@ async function pullFromSheets(manual = false) {
   if (!url) return;
 
   if (manual) setSyncBadge('pulling', '讀取中…');
+  if (manual) pullTop3FromSheets();
 
   try {
     const res = await fetch(`${url}?action=read`);
@@ -947,7 +948,7 @@ const TOP3_KEY = 'weeklyPlanner_top3';
 
 function getTop3WeekKey() {
   const days = getWeekDates(weekOffset);
-  return 'top3_' + dateKey(days[0]);
+  return dateKey(days[0]); // e.g. "2026-03-09"
 }
 
 function loadTop3() {
@@ -961,9 +962,43 @@ function loadTop3() {
 }
 
 function saveTop3(goals) {
+  // 本機儲存
   const all = JSON.parse(localStorage.getItem(TOP3_KEY) || '{}');
   all[getTop3WeekKey()] = goals;
   localStorage.setItem(TOP3_KEY, JSON.stringify(all));
+  // 推送到試算表
+  pushTop3ToSheets(getTop3WeekKey(), goals);
+}
+
+let top3PushTimer = null;
+async function pushTop3ToSheets(weekKey, goals) {
+  const url = getGasUrl();
+  if (!url) return;
+  clearTimeout(top3PushTimer);
+  top3PushTimer = setTimeout(async () => {
+    try {
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'writeTop3', week: weekKey, goals })
+      });
+    } catch(e) { console.warn('top3 push failed', e); }
+  }, 800);
+}
+
+async function pullTop3FromSheets() {
+  const url = getGasUrl();
+  if (!url) return;
+  try {
+    const res = await fetch(`${url}?action=readTop3`);
+    const json = await res.json();
+    if (!json.data) return;
+    // 合併進 localStorage
+    const all = JSON.parse(localStorage.getItem(TOP3_KEY) || '{}');
+    Object.assign(all, json.data);
+    localStorage.setItem(TOP3_KEY, JSON.stringify(all));
+    renderTop3();
+  } catch(e) { console.warn('top3 pull failed', e); }
 }
 
 function renderTop3() {
@@ -1031,6 +1066,7 @@ function renderTop3() {
 initSetupBanner();
 render();
 renderTop3();
+pullTop3FromSheets();
 // 頁面載入時先從試算表拉一次
 pullFromSheets(false);
 // 之後每 30 秒自動拉取
