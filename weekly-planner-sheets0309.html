@@ -191,7 +191,7 @@
     background: var(--surface);
     border: 1.5px solid var(--border);
     border-radius: 14px;
-    overflow: hidden;
+    overflow: visible;
     box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
@@ -207,6 +207,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    border-radius: 13px 13px 0 0;
   }
   .day-title  { font-size: 15px; font-weight: 700; }
   .today-badge {
@@ -232,7 +233,7 @@
   }
   .task-item:hover { background: #F5F2EB; }
   .task-item:hover .task-delete { opacity: 1; }
-  .task-item.done { opacity: 0.55; }
+  .task-item.done { opacity: 1; }
 
   .task-check {
     width: 18px; height: 18px;
@@ -261,7 +262,12 @@
     margin-bottom: 2px;
   }
   .task-text { font-size: 13.5px; line-height: 1.5; color: var(--ink); word-break: break-all; }
-  .task-item.done .task-text { text-decoration: line-through; color: var(--ink-soft); }
+  .task-item.done .task-text {
+    text-decoration: line-through;
+    text-decoration-color: var(--ink-soft);
+    text-decoration-thickness: 1.5px;
+    color: #A09A93;
+  }
 
   .task-delete {
     opacity: 0;
@@ -275,7 +281,7 @@
   }
   .task-delete:hover { color: var(--accent); }
 
-  .add-task-form { padding: 6px 10px 10px; display: flex; gap: 6px; }
+  .add-task-form { padding: 6px 10px 10px; display: flex; gap: 6px; border-radius: 0 0 13px 13px; overflow: visible; }
   .add-input {
     flex: 1;
     background: var(--bg);
