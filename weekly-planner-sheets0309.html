@@ -877,7 +877,14 @@ function render() {
   days.forEach((day, idx) => {
     const key = dateKey(day);
     if (!data[key]) data[key] = [];
-    const tasks = data[key];
+    // 按時間自動排序（有時間的排前面，沒時間的排後面）
+    const tasks = [...(data[key] || [])].sort((a, b) => {
+      const ta = a.time ? a.time.split('~')[0].trim() : '99:99';
+      const tb = b.time ? b.time.split('~')[0].trim() : '99:99';
+      return ta.localeCompare(tb);
+    });
+    // 同步排序後的順序回 data（方便後續操作）
+    data[key] = tasks;
     totalTasks += tasks.length;
     doneTasks  += tasks.filter(t => t.done).length;
 
@@ -918,6 +925,7 @@ function render() {
         item.querySelector('.task-text').onclick  = (e) => { e.stopPropagation(); toggle(); };
         item.querySelector('.task-delete').onclick = (e) => {
           e.stopPropagation();
+          if (!confirm('確定刪除「' + task.text + '」？')) return;
           data[key].splice(ti, 1);
           save(); render();
         };
