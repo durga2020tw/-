@@ -556,8 +556,10 @@ async function pushToSheets() {
       const sheetsData = {};
       pullJson.tasks.forEach(t => {
         if (!t.date) return;
-        if (!sheetsData[t.date]) sheetsData[t.date] = [];
-        sheetsData[t.date].push({
+        const dateKey = normalizeDate(t.date);
+        if (!dateKey) return;
+        if (!sheetsData[dateKey]) sheetsData[dateKey] = [];
+        sheetsData[dateKey].push({
           text: t.text || '',
           time: t.time || '',
           done: t.done === true || t.done === 'TRUE',
@@ -592,6 +594,34 @@ async function pushToSheets() {
   isSyncing = false;
 }
 
+// ── 日期格式標準化（處理試算表傳回各種格式）──────────────
+function normalizeDate(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim();
+  // 已經是 YYYY-MM-DD，直接回傳
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // ISO 格式（含 T 或 Z），例如 2026-03-08T16:00:00.000Z
+  // 用瀏覽器本地時區解析，避免 UTC 與本地時區差異
+  if (s.includes('T')) {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+  }
+  // 其他格式嘗試解析
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  return s;
+}
+
 // ── Pull from Google Sheets ────────────────────────────
 async function pullFromSheets(manual = false) {
   const url = getGasUrl();
@@ -602,26 +632,31 @@ async function pullFromSheets(manual = false) {
   try {
     const res = await fetch(`${url}?action=read`);
     const json = await res.json();
-    if (!Array.isArray(json.tasks)) throw new Error('Invalid response');
+    console.log('[pull] 試算表原始資料:', JSON.stringify(json));
+    if (!Array.isArray(json.tasks)) throw new Error('Invalid response: ' + JSON.stringify(json));
 
-    // 重新整理成 { date: [tasks] } 格式
+    // 重新整理成 { date: [tasks] } 格式，套用日期標準化
     const newData = {};
     json.tasks.forEach(t => {
       if (!t.date) return;
-      if (!newData[t.date]) newData[t.date] = [];
-      newData[t.date].push({
+      const dk = normalizeDate(t.date);
+      if (!dk) return;
+      console.log('[pull] task:', dk, t.text);
+      if (!newData[dk]) newData[dk] = [];
+      newData[dk].push({
         text: t.text || '',
         time: t.time || '',
         done: t.done === true || t.done === 'TRUE',
         id:   t.id   || ''
       });
     });
+    console.log('[pull] 整理後資料:', JSON.stringify(newData));
     data = newData;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     render();
     if (manual) {
-      setSyncBadge('ok', '已更新 ✓');
-      setTimeout(() => setSyncBadge('', ''), 2500);
+      setSyncBadge('ok', `已更新 ${json.tasks.length} 筆 ✓`);
+      setTimeout(() => setSyncBadge('', ''), 3000);
     }
   } catch (e) {
     if (manual) setSyncBadge('error', '讀取失敗 ✗');
