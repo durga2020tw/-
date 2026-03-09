@@ -174,19 +174,36 @@
   }
 
   /* Day columns */
+  .week-section {
+    max-width: 100%;
+    margin: 0 auto 14px;
+  }
+  .week-section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    padding-left: 2px;
+  }
   .days-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
     gap: 6px;
     max-width: 100%;
-    margin: 0 auto;
   }
-  .day-col.is-weekend { background: #FAF8F3; }
+  .days-grid.weekdays { grid-template-columns: repeat(4, 1fr); }
+  .days-grid.weekend  { grid-template-columns: repeat(3, 1fr); }
   .days-grid > * { min-width: 0; }
+  .day-col.is-weekend { background: #FAF8F3; }
 
-  @media (max-width: 900px) { .days-grid { grid-template-columns: repeat(4, 1fr); } }
-  @media (max-width: 700px)  { .days-grid { grid-template-columns: 1fr 1fr; } }
-  @media (max-width: 420px)  { .days-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 700px) {
+    .days-grid.weekdays { grid-template-columns: repeat(2, 1fr); }
+    .days-grid.weekend  { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 420px) {
+    .days-grid.weekdays, .days-grid.weekend { grid-template-columns: 1fr; }
+  }
 
   .day-col {
     background: var(--surface);
@@ -389,7 +406,14 @@
 </div>
 <div class="progress-label" id="progressLabel">0 / 0 項完成</div>
 
-<div class="days-grid" id="daysGrid"></div>
+<div class="week-section" id="weekdaySection">
+  <div class="week-section-label">工作日 Mon – Thu</div>
+  <div class="days-grid weekdays" id="weekdayGrid"></div>
+</div>
+<div class="week-section" id="weekendSection">
+  <div class="week-section-label">週末 Fri – Sun</div>
+  <div class="days-grid weekend" id="weekendGrid"></div>
+</div>
 
 <!-- Modal -->
 <div class="modal-overlay" id="modalOverlay">
@@ -640,8 +664,10 @@ function render() {
   document.getElementById('weekRange').textContent =
     `${start.getMonth()+1}/${start.getDate()} – ${end.getMonth()+1}/${end.getDate()}`;
 
-  const grid = document.getElementById('daysGrid');
-  grid.innerHTML = '';
+  const weekdayGrid = document.getElementById('weekdayGrid');
+  const weekendGrid = document.getElementById('weekendGrid');
+  weekdayGrid.innerHTML = '';
+  weekendGrid.innerHTML = '';
   let totalTasks = 0, doneTasks = 0;
 
   days.forEach((day, idx) => {
@@ -717,7 +743,13 @@ function render() {
       openModal();
     };
     col.appendChild(form);
-    grid.appendChild(col);
+    // 周一(1)~周四(4) → weekdayGrid；周五(5)、周六(6)、周日(0) → weekendGrid
+    const dow = day.getDay();
+    if (dow >= 1 && dow <= 4) {
+      weekdayGrid.appendChild(col);
+    } else {
+      weekendGrid.appendChild(col);
+    }
   });
 
   const pct = totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
