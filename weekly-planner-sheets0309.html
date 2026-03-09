@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>週計劃表</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F2EB;
+    --surface: #FFFDF8;
+    --ink: #1A1714;
+    --ink-soft: #5C5650;
+    --accent: #C84B31;
+    --accent-soft: #F0E8E5;
+    --done-color: #7A9E7E;
+    --border: #D9D3C8;
+    --shadow: 0 2px 12px rgba(26,23,20,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+
+  /* ── Setup Banner ── */
+  #setupBanner {
+    display: none;
+    background: #FFF8E1;
+    border: 1.5px solid #FFD54F;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin: 0 auto 20px;
+    max-width: 900px;
+    font-size: 13px;
+    color: #5D4037;
+    line-height: 1.6;
+  }
+  #setupBanner strong { color: #C84B31; }
+  #gasUrlInput {
+    margin-top: 10px;
+    width: 100%;
+    background: #fff;
+    border: 1.5px solid #FFD54F;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: 'Noto Sans TC', sans-serif;
+    color: var(--ink);
+    outline: none;
+  }
+  #gasUrlInput:focus { border-color: var(--accent); }
+  #saveUrlBtn {
+    margin-top: 8px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 18px;
+    font-size: 13px;
+    font-family: 'Noto Sans TC', sans-serif;
+    cursor: pointer;
+  }
+  #saveUrlBtn:hover { opacity: 0.88; }
+
+  /* ── Header ── */
+  header { text-align: center; margin-bottom: 24px; }
+
+  .week-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+
+  .week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 12px;
+  }
+
+  .nav-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    width: 36px; height: 36px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink);
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .nav-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+  .week-range-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 180px;
+    justify-content: center;
+  }
+
+  .week-range {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-soft);
+  }
+
+  .sync-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    white-space: nowrap;
+  }
+  .sync-badge.syncing  { background: #FFF8E1; color: #F57F17; }
+  .sync-badge.ok       { background: #E8F5E9; color: #388E3C; }
+  .sync-badge.error    { background: #FFEBEE; color: #C62828; }
+  .sync-badge.pulling  { background: #E3F2FD; color: #1565C0; }
+
+  /* Sync toolbar */
+  .sync-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: -10px auto 18px;
+  }
+  .pull-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-family: 'Noto Sans TC', sans-serif;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .pull-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Progress bar */
+  .progress-bar-wrap {
+    max-width: 480px;
+    margin: 0 auto 28px;
+    background: var(--border);
+    border-radius: 99px;
+    height: 6px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--done-color);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+  .progress-label {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Day columns */
+  .days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .day-col.is-weekend { background: #FAF8F3; }
+
+  @media (max-width: 1100px) { .days-grid { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 700px)  { .days-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 420px)  { .days-grid { grid-template-columns: 1fr; } }
+
+  .day-col {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+  }
+  .day-col.is-today {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow);
+  }
+
+  .day-header {
+    padding: 12px 14px 10px;
+    border-bottom: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .day-title  { font-size: 15px; font-weight: 700; }
+  .today-badge {
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 99px;
+    letter-spacing: 0.05em;
+  }
+
+  .tasks-list { padding: 10px 10px 6px; flex: 1; }
+
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 7px 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .task-item:hover { background: #F5F2EB; }
+  .task-item:hover .task-delete { opacity: 1; }
+  .task-item.done { opacity: 0.55; }
+
+  .task-check {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 5px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .task-item.done .task-check { background: var(--done-color); border-color: var(--done-color); }
+  .task-check::after { content: '✓'; color: #fff; font-size: 11px; font-weight: 700; display: none; }
+  .task-item.done .task-check::after { display: block; }
+
+  .task-inner { flex: 1; min-width: 0; }
+
+  .task-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 10.5px;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 1px 5px;
+    border-radius: 4px;
+    white-space: nowrap;
+    display: inline-block;
+    margin-bottom: 2px;
+  }
+  .task-text { font-size: 13.5px; line-height: 1.5; color: var(--ink); word-break: break-all; }
+  .task-item.done .task-text { text-decoration: line-through; color: var(--ink-soft); }
+
+  .task-delete {
+    opacity: 0;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--ink-soft);
+    padding: 0 2px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    transition: opacity 0.12s, color 0.12s;
+  }
+  .task-delete:hover { color: var(--accent); }
+
+  .add-task-form { padding: 6px 10px 10px; display: flex; gap: 6px; }
+  .add-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-family: 'Noto Sans TC', sans-serif;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .add-input:focus { border-color: var(--accent); }
+  .add-input::placeholder { color: #BDB8B0; }
+
+  .add-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    width: 30px; height: 30px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+  }
+  .add-btn:hover { opacity: 0.85; }
+
+  .empty-hint { text-align: center; font-size: 12px; color: var(--border); padding: 12px 0 4px; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(26,23,20,0.35);
+    z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 24px;
+    width: 300px;
+    box-shadow: 0 8px 40px rgba(26,23,20,0.18);
+  }
+  .modal h3 { font-size: 15px; margin-bottom: 14px; }
+  .modal input {
+    width: 100%;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-family: 'Noto Sans TC', sans-serif;
+    color: var(--ink);
+    outline: none;
+    margin-bottom: 10px;
+  }
+  .modal input:focus { border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .modal-cancel, .modal-ok {
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+  }
+  .modal-cancel { background: var(--bg); color: var(--ink-soft); }
+  .modal-ok { background: var(--accent); color: #fff; }
+</style>
+</head>
+<body>
+
+<!-- Setup Banner（未設定 GAS URL 時顯示） -->
+<div id="setupBanner">
+  <strong>⚙️ 尚未設定 Google Apps Script 網址</strong><br>
+  請先完成下方的 Apps Script 設定步驟，再將部署網址貼入此處：
+  <input type="text" id="gasUrlInput" placeholder="https://script.google.com/macros/s/xxxxx/exec" />
+  <button id="saveUrlBtn">儲存並連線</button>
+</div>
+
+<header>
+  <div class="week-label">Weekly Planner</div>
+  <h1>本週計劃</h1>
+  <div class="week-nav">
+    <button class="nav-btn" onclick="changeWeek(-1)">‹</button>
+    <div class="week-range-wrap">
+      <div class="week-range" id="weekRange"></div>
+      <span class="sync-badge" id="syncBadge" style="display:none"></span>
+    </div>
+    <button class="nav-btn" onclick="changeWeek(1)">›</button>
+  </div>
+</header>
+
+<div class="sync-toolbar">
+  <button class="pull-btn" onclick="pullFromSheets(true)">↓ 從試算表同步</button>
+</div>
+
+<div class="progress-bar-wrap">
+  <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+</div>
+<div class="progress-label" id="progressLabel">0 / 0 項完成</div>
+
+<div class="days-grid" id="daysGrid"></div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>新增事項</h3>
+    <input type="text" id="modalText" placeholder="事項名稱" />
+    <input type="text" id="modalTime" placeholder="時間（選填）例：14:00~17:00" />
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">取消</button>
+      <button class="modal-ok" onclick="confirmAdd()">新增</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  設定區：將你的 Apps Script 網址填入此處
+//  （或透過畫面上方的輸入欄位設定，會自動記住）
+// ══════════════════════════════════════════════════════
+const HARDCODED_GAS_URL = 'https://script.google.com/macros/s/AKfycbwgm9iwj21Dq8TR-B3rc2LERUQDszLdywGMjAScLiJVPC5Gy5zak2JJTN-VKyZGeEAjvQ/exec';
+// ══════════════════════════════════════════════════════
+
+const DAYS_ZH    = ['日','一','二','三','四','五','六'];
+const STORAGE_KEY = 'weeklyPlanner_v1';
+const GAS_KEY     = 'weeklyPlanner_gasUrl';
+const PULL_INTERVAL_MS = 30000; // 每 30 秒自動從試算表拉取
+
+let weekOffset    = 0;
+let pendingDayIndex = null;
+let data          = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+let isSyncing     = false;
+let pushTimer     = null;
+
+// ── GAS URL 管理 ───────────────────────────────────────
+function getGasUrl() {
+  return HARDCODED_GAS_URL || localStorage.getItem(GAS_KEY) || '';
+}
+
+function initSetupBanner() {
+  const url = getGasUrl();
+  const banner = document.getElementById('setupBanner');
+  if (!url) {
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+document.getElementById('saveUrlBtn').addEventListener('click', () => {
+  const val = document.getElementById('gasUrlInput').value.trim();
+  if (!val.startsWith('https://script.google.com')) {
+    alert('請貼上正確的 Apps Script 網址（應以 https://script.google.com 開頭）');
+    return;
+  }
+  localStorage.setItem(GAS_KEY, val);
+  document.getElementById('setupBanner').style.display = 'none';
+  pullFromSheets(true);
+});
+
+// ── Sync badge ─────────────────────────────────────────
+function setSyncBadge(type, text) {
+  const badge = document.getElementById('syncBadge');
+  badge.className = 'sync-badge ' + type;
+  badge.textContent = text;
+  badge.style.display = text ? 'inline-block' : 'none';
+}
+
+// ── Save：本機 + 推送到試算表（防抖 1s）────────────────
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(pushToSheets, 1000);
+}
+
+// ── Push to Google Sheets ──────────────────────────────
+async function pushToSheets() {
+  const url = getGasUrl();
+  if (!url) return;
+  if (isSyncing) { clearTimeout(pushTimer); pushTimer = setTimeout(pushToSheets, 1500); return; }
+
+  isSyncing = true;
+  setSyncBadge('syncing', '同步中…');
+
+  // 展平資料
+  const tasks = [];
+  for (const [date, items] of Object.entries(data)) {
+    items.forEach((item, idx) => {
+      tasks.push({
+        date,
+        text:  item.text  || '',
+        time:  item.time  || '',
+        done:  item.done  ? 'TRUE' : 'FALSE',
+        id:    item.id    || `${date}-${idx}`
+      });
+    });
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' }, // 避免 CORS preflight
+      body: JSON.stringify({ action: 'write', tasks })
+    });
+    const json = await res.json();
+    if (json.success) {
+      setSyncBadge('ok', '已同步 ✓');
+      setTimeout(() => setSyncBadge('', ''), 3000);
+    } else {
+      throw new Error(json.error || 'unknown');
+    }
+  } catch (e) {
+    setSyncBadge('error', '同步失敗 ✗');
+    console.error('pushToSheets error:', e);
+  }
+  isSyncing = false;
+}
+
+// ── Pull from Google Sheets ────────────────────────────
+async function pullFromSheets(manual = false) {
+  const url = getGasUrl();
+  if (!url) return;
+
+  if (manual) setSyncBadge('pulling', '讀取中…');
+
+  try {
+    const res = await fetch(`${url}?action=read`);
+    const json = await res.json();
+    if (!Array.isArray(json.tasks)) throw new Error('Invalid response');
+
+    // 重新整理成 { date: [tasks] } 格式
+    const newData = {};
+    json.tasks.forEach(t => {
+      if (!t.date) return;
+      if (!newData[t.date]) newData[t.date] = [];
+      newData[t.date].push({
+        text: t.text || '',
+        time: t.time || '',
+        done: t.done === true || t.done === 'TRUE',
+        id:   t.id   || ''
+      });
+    });
+    data = newData;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    render();
+    if (manual) {
+      setSyncBadge('ok', '已更新 ✓');
+      setTimeout(() => setSyncBadge('', ''), 2500);
+    }
+  } catch (e) {
+    if (manual) setSyncBadge('error', '讀取失敗 ✗');
+    console.error('pullFromSheets error:', e);
+  }
+}
+
+// ── Date helpers ───────────────────────────────────────
+function getWeekDates(offset = 0) {
+  const today = new Date();
+  const dow = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1) + offset * 7);
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push(d);
+  }
+  return days;
+}
+
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function isToday(d) {
+  const t = new Date();
+  return d.getDate()===t.getDate() && d.getMonth()===t.getMonth() && d.getFullYear()===t.getFullYear();
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Render ─────────────────────────────────────────────
+function render() {
+  const days = getWeekDates(weekOffset);
+  const start = days[0], end = days[days.length - 1];
+  document.getElementById('weekRange').textContent =
+    `${start.getMonth()+1}/${start.getDate()} – ${end.getMonth()+1}/${end.getDate()}`;
+
+  const grid = document.getElementById('daysGrid');
+  grid.innerHTML = '';
+  let totalTasks = 0, doneTasks = 0;
+
+  days.forEach((day, idx) => {
+    const key = dateKey(day);
+    if (!data[key]) data[key] = [];
+    const tasks = data[key];
+    totalTasks += tasks.length;
+    doneTasks  += tasks.filter(t => t.done).length;
+
+    const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+    const col = document.createElement('div');
+    col.className = 'day-col' + (isToday(day) ? ' is-today' : '') + (isWeekend ? ' is-weekend' : '');
+
+    // Header
+    const hdr = document.createElement('div');
+    hdr.className = 'day-header';
+    const titleWrap = document.createElement('div');
+    titleWrap.innerHTML = `<div class="day-title">${day.getMonth()+1}/${day.getDate()} (周${DAYS_ZH[day.getDay()]})</div>`;
+    const right = document.createElement('div');
+    right.innerHTML = isToday(day) ? `<span class="today-badge">今天</span>` : '';
+    hdr.appendChild(titleWrap);
+    hdr.appendChild(right);
+    col.appendChild(hdr);
+
+    // Tasks
+    const list = document.createElement('div');
+    list.className = 'tasks-list';
+    if (tasks.length === 0) {
+      list.innerHTML = `<div class="empty-hint">尚無事項</div>`;
+    } else {
+      tasks.forEach((task, ti) => {
+        const item = document.createElement('div');
+        item.className = 'task-item' + (task.done ? ' done' : '');
+        item.innerHTML = `
+          <div class="task-check"></div>
+          <div class="task-inner">
+            ${task.time ? `<div class="task-time">${escHtml(task.time)}</div>` : ''}
+            <div class="task-text">${escHtml(task.text)}</div>
+          </div>
+          <span class="task-delete" title="刪除">✕</span>
+        `;
+        const toggle = () => { data[key][ti].done = !data[key][ti].done; save(); render(); };
+        item.querySelector('.task-check').onclick = (e) => { e.stopPropagation(); toggle(); };
+        item.querySelector('.task-text').onclick  = (e) => { e.stopPropagation(); toggle(); };
+        item.querySelector('.task-delete').onclick = (e) => {
+          e.stopPropagation();
+          data[key].splice(ti, 1);
+          save(); render();
+        };
+        list.appendChild(item);
+      });
+    }
+    col.appendChild(list);
+
+    // Add form
+    const form = document.createElement('div');
+    form.className = 'add-task-form';
+    form.innerHTML = `
+      <input class="add-input" placeholder="+ 新增事項" />
+      <button class="add-btn">+</button>
+    `;
+    const inp = form.querySelector('.add-input');
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && inp.value.trim()) {
+        quickAdd(key, inp.value.trim()); inp.value = '';
+      }
+    });
+    form.querySelector('.add-btn').onclick = () => {
+      pendingDayIndex = key;
+      document.getElementById('modalText').value = inp.value.trim();
+      document.getElementById('modalTime').value = '';
+      inp.value = '';
+      openModal();
+    };
+    col.appendChild(form);
+    grid.appendChild(col);
+  });
+
+  const pct = totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `${doneTasks} / ${totalTasks} 項完成`;
+}
+
+function quickAdd(key, text) {
+  if (!data[key]) data[key] = [];
+  data[key].push({ text, time: '', done: false });
+  save(); render();
+}
+
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('modalText').focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  pendingDayIndex = null;
+}
+
+function confirmAdd() {
+  const text = document.getElementById('modalText').value.trim();
+  const time = document.getElementById('modalTime').value.trim();
+  if (!text || !pendingDayIndex) { closeModal(); return; }
+  if (!data[pendingDayIndex]) data[pendingDayIndex] = [];
+  data[pendingDayIndex].push({ text, time, done: false });
+  save(); render();
+  closeModal();
+}
+
+function changeWeek(dir) {
+  weekOffset += dir;
+  render();
+}
+
+document.getElementById('modalTime').addEventListener('keydown', e => { if (e.key==='Enter') confirmAdd(); });
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target===document.getElementById('modalOverlay')) closeModal();
+});
+
+// ── Init ───────────────────────────────────────────────
+initSetupBanner();
+render();
+// 頁面載入時先從試算表拉一次
+pullFromSheets(false);
+// 之後每 30 秒自動拉取
+setInterval(() => pullFromSheets(false), PULL_INTERVAL_MS);
+</script>
+</body>
+</html>
