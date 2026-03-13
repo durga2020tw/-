@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 小學伴指南</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Bangers&family=Press+Start+2P&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1a0a2e;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Noto Sans TC', sans-serif;
+    overflow-x: hidden;
+  }
+
+  .scene {
+    width: 1100px;
+    min-height: 700px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+  }
+
+  /* Background stars */
+  .stars {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle 2s infinite alternate;
+  }
+  @keyframes twinkle {
+    from { opacity: 0.2; }
+    to { opacity: 1; }
+  }
+
+  /* ===== DESK / FLOOR ===== */
+  .room {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 0;
+    z-index: 1;
+  }
+
+  /* ===== MONITOR ===== */
+  .monitor-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 10;
+  }
+
+  .monitor {
+    width: 760px;
+    background: #111;
+    border-radius: 18px;
+    border: 6px solid #f4c430;
+    box-shadow:
+      0 0 0 3px #e07b00,
+      0 0 40px #f4c43099,
+      0 30px 60px #000a;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .monitor-top-bar {
+    background: linear-gradient(90deg, #f4c430, #e07b00);
+    height: 28px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 8px;
+  }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot.red { background: #ff5f57; }
+  .dot.yellow { background: #febc2e; }
+  .dot.green { background: #28c840; }
+  .monitor-title {
+    font-family: 'Bangers', sans-serif;
+    font-size: 16px;
+    color: #1a0a2e;
+    letter-spacing: 1px;
+    margin-left: 8px;
+  }
+
+  .screen {
+    background: linear-gradient(135deg, #0d1b3e 0%, #1a0a4e 50%, #0a2040 100%);
+    padding: 20px 22px 22px;
+    min-height: 480px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Scanlines effect */
+  .screen::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,0.08) 3px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  .screen-title {
+    font-family: 'Bangers', sans-serif;
+    font-size: 28px;
+    color: #f4c430;
+    text-align: center;
+    letter-spacing: 2px;
+    text-shadow: 0 0 15px #f4c43088, 2px 2px 0 #e07b00;
+    margin-bottom: 4px;
+  }
+  .screen-subtitle {
+    font-size: 14px;
+    color: #aad4ff;
+    text-align: center;
+    margin-bottom: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .tips-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+
+  .tip-card {
+    background: rgba(255,255,255,0.05);
+    border: 2px solid;
+    border-radius: 10px;
+    padding: 11px 15px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+  .tip-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: inherit;
+    filter: brightness(2);
+  }
+
+  .tip-card:nth-child(1) { border-color: #ff6b6b; background: rgba(255,107,107,0.08); }
+  .tip-card:nth-child(2) { border-color: #ffd93d; background: rgba(255,217,61,0.08); }
+  .tip-card:nth-child(3) { border-color: #6bcb77; background: rgba(107,203,119,0.08); }
+  .tip-card:nth-child(4) { border-color: #4d96ff; background: rgba(77,150,255,0.08); }
+  .tip-card:nth-child(5) { border-color: #c77dff; background: rgba(199,125,255,0.08); }
+
+  .tip-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .tip-num {
+    font-family: 'Bangers', sans-serif;
+    font-size: 20px;
+    min-width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 400;
+  }
+  .tip-card:nth-child(1) .tip-num { background: #ff6b6b; color: white; }
+  .tip-card:nth-child(2) .tip-num { background: #ffd93d; color: #1a0a2e; }
+  .tip-card:nth-child(3) .tip-num { background: #6bcb77; color: #1a0a2e; }
+  .tip-card:nth-child(4) .tip-num { background: #4d96ff; color: white; }
+  .tip-card:nth-child(5) .tip-num { background: #c77dff; color: white; }
+
+  .tip-label {
+    font-size: 15px;
+    font-weight: 900;
+    color: white;
+    letter-spacing: 0.3px;
+  }
+  .tip-badge {
+    margin-left: auto;
+    font-size: 12px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .tip-card:nth-child(1) .tip-badge { background: #ff6b6b33; color: #ff9999; border: 1px solid #ff6b6b55; }
+  .tip-card:nth-child(2) .tip-badge { background: #ffd93d33; color: #ffe87a; border: 1px solid #ffd93d55; }
+  .tip-card:nth-child(3) .tip-badge { background: #6bcb7733; color: #9dde9f; border: 1px solid #6bcb7755; }
+  .tip-card:nth-child(4) .tip-badge { background: #4d96ff33; color: #88bbff; border: 1px solid #4d96ff55; }
+  .tip-card:nth-child(5) .tip-badge { background: #c77dff33; color: #dda8ff; border: 1px solid #c77dff55; }
+
+  .tip-secret {
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+  .tip-secret strong { color: rgba(255,255,255,0.95); }
+
+  .tip-try {
+    font-size: 13px;
+    color: rgba(180,220,255,0.9);
+    background: rgba(0,0,0,0.25);
+    border-radius: 6px;
+    padding: 6px 10px;
+    line-height: 1.55;
+    border-left: 3px solid;
+    font-style: italic;
+  }
+  .tip-card:nth-child(1) .tip-try { border-color: #ff6b6b; }
+  .tip-card:nth-child(2) .tip-try { border-color: #ffd93d; }
+  .tip-card:nth-child(3) .tip-try { border-color: #6bcb77; }
+  .tip-card:nth-child(4) .tip-try { border-color: #4d96ff; }
+  .tip-card:nth-child(5) .tip-try { border-color: #c77dff; }
+
+  .monitor-stand {
+    width: 80px;
+    height: 30px;
+    background: linear-gradient(180deg, #c8a000, #8a6800);
+    border-radius: 0 0 8px 8px;
+    margin-top: -2px;
+    box-shadow: 0 6px 15px #0008;
+  }
+  .monitor-base {
+    width: 140px;
+    height: 14px;
+    background: linear-gradient(180deg, #8a6800, #5a4400);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px #0008;
+  }
+
+  /* ===== CHARACTERS ===== */
+  .character {
+    position: absolute;
+    bottom: 30px;
+    z-index: 20;
+  }
+
+  /* Left character - Spike (cactus-like) */
+  .char-left {
+    left: -20px;
+    animation: float-left 3s ease-in-out infinite;
+  }
+  @keyframes float-left {
+    0%,100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-8px) rotate(2deg); }
+  }
+
+  /* Right character - Shelly (default brawler) */
+  .char-right {
+    right: -20px;
+    animation: float-right 3.2s ease-in-out infinite;
+  }
+  @keyframes float-right {
+    0%,100% { transform: translateY(0) rotate(2deg); }
+    50% { transform: translateY(-10px) rotate(-2deg); }
+  }
+
+  /* Speech bubbles */
+  .bubble {
+    position: absolute;
+    background: white;
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 900;
+    color: #1a0a2e;
+    white-space: nowrap;
+    box-shadow: 0 3px 10px #0008;
+    border: 2px solid #f4c430;
+    z-index: 30;
+    animation: bubble-pop 0.5s ease-out;
+  }
+  @keyframes bubble-pop {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .bubble::after {
+    content: '';
+    position: absolute;
+    border: 8px solid transparent;
+  }
+  .bubble-left {
+    top: -35px;
+    right: -10px;
+  }
+  .bubble-left::after {
+    border-top-color: white;
+    bottom: -16px;
+    left: 20px;
+  }
+  .bubble-right {
+    top: -35px;
+    left: -10px;
+  }
+  .bubble-right::after {
+    border-top-color: white;
+    bottom: -16px;
+    right: 20px;
+  }
+
+  /* Decorative gems/coins */
+  .gem {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    transform: rotate(45deg);
+    animation: spin-gem 4s linear infinite;
+    z-index: 5;
+  }
+  @keyframes spin-gem {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .star-power {
+    position: absolute;
+    font-size: 22px;
+    animation: float-star 2.5s ease-in-out infinite alternate;
+    z-index: 5;
+  }
+  @keyframes float-star {
+    from { transform: translateY(0) scale(1); }
+    to { transform: translateY(-12px) scale(1.1); }
+  }
+
+  /* Title banner top */
+  .title-banner {
+    text-align: center;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 10;
+  }
+  .title-banner h1 {
+    font-family: 'Bangers', sans-serif;
+    font-size: 42px;
+    color: #f4c430;
+    letter-spacing: 3px;
+    text-shadow:
+      3px 3px 0 #e07b00,
+      6px 6px 0 #8B4513,
+      0 0 30px #f4c43066;
+    line-height: 1;
+  }
+  .title-banner .sub {
+    font-size: 16px;
+    color: #aad4ff;
+    font-weight: 700;
+    margin-top: 6px;
+    text-shadow: 0 0 10px #4d96ff88;
+  }
+
+  /* Brawl Stars themed decorations */
+  .trophy { font-size: 18px; display: inline-block; margin: 0 6px; }
+
+  /* Power level bar */
+  .power-bar-wrap {
+    position: absolute;
+    bottom: 8px;
+    left: 22px;
+    right: 22px;
+    z-index: 50;
+  }
+  .power-bar-label {
+    font-size: 12px;
+    color: #f4c430;
+    font-weight: 700;
+    margin-bottom: 3px;
+    font-family: 'Bangers', sans-serif;
+    letter-spacing: 1px;
+  }
+  .power-bar {
+    height: 8px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 4px;
+    border: 1px solid #f4c43066;
+    overflow: hidden;
+  }
+  .power-bar-fill {
+    height: 100%;
+    width: 82%;
+    background: linear-gradient(90deg, #6bcb77, #f4c430, #ff6b6b);
+    border-radius: 4px;
+    animation: power-pulse 2s ease-in-out infinite;
+  }
+  @keyframes power-pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  /* SVG Characters */
+  svg.brawler { display: block; }
+</style>
+</head>
+<body>
+
+<!-- Stars background -->
+<div class="stars" id="stars"></div>
+
+<div class="scene">
+  <!-- Decorative elements -->
+  <div class="star-power" style="top:40px;left:60px;animation-delay:0s;">⭐</div>
+  <div class="star-power" style="top:80px;right:50px;animation-delay:1s;">💎</div>
+  <div class="star-power" style="bottom:120px;left:30px;animation-delay:0.5s;">🏆</div>
+  <div class="star-power" style="bottom:100px;right:25px;animation-delay:1.5s;">⚡</div>
+
+  <div style="display:flex;flex-direction:column;align-items:center;gap:0;position:relative;width:100%;">
+    
+    <!-- Title Banner -->
+    <div class="title-banner">
+      <h1>
+        <span class="trophy">🏆</span>
+        荒野亂鬥 × AI 學習任務
+        <span class="trophy">🏆</span>
+      </h1>
+      <div class="sub">解鎖你的 AI 超能力！成為傳說等級的提示工程師！</div>
+    </div>
+
+    <!-- Room with monitor and characters -->
+    <div class="room">
+      
+      <!-- Left Character: Spike-inspired cactus brawler -->
+      <div class="character char-left">
+        <div style="position:relative;">
+          <div class="bubble bubble-left">🌵 AI 好強！</div>
+          <!-- Spike-like SVG character -->
+          <svg width="110" height="160" viewBox="0 0 110 160" class="brawler">
+            <!-- Body -->
+            <ellipse cx="55" cy="100" rx="28" ry="32" fill="#4CAF50"/>
+            <!-- Spikes on body -->
+            <polygon points="55,60 50,72 60,72" fill="#2E7D32"/>
+            <polygon points="35,78 28,68 40,75" fill="#2E7D32"/>
+            <polygon points="75,78 82,68 70,75" fill="#2E7D32"/>
+            <polygon points="30,95 20,88 32,100" fill="#2E7D32"/>
+            <polygon points="80,95 90,88 78,100" fill="#2E7D32"/>
+            <!-- Head -->
+            <ellipse cx="55" cy="72" rx="22" ry="20" fill="#66BB6A"/>
+            <!-- Eyes -->
+            <ellipse cx="48" cy="70" rx="5" ry="6" fill="white"/>
+            <ellipse cx="62" cy="70" rx="5" ry="6" fill="white"/>
+            <circle cx="49" cy="71" r="3" fill="#1B5E20"/>
+            <circle cx="63" cy="71" r="3" fill="#1B5E20"/>
+            <circle cx="50" cy="70" r="1" fill="white"/>
+            <circle cx="64" cy="70" r="1" fill="white"/>
+            <!-- Smile -->
+            <path d="M 47 79 Q 55 85 63 79" stroke="#2E7D32" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <!-- Head spikes -->
+            <polygon points="45,52 42,44 50,50" fill="#2E7D32"/>
+            <polygon points="55,50 53,40 60,48" fill="#2E7D32"/>
+            <polygon points="65,52 68,44 60,50" fill="#2E7D32"/>
+            <!-- Arms -->
+            <ellipse cx="30" cy="105" rx="8" ry="16" fill="#4CAF50" transform="rotate(20,30,105)"/>
+            <ellipse cx="80" cy="105" rx="8" ry="16" fill="#4CAF50" transform="rotate(-20,80,105)"/>
+            <!-- Legs -->
+            <rect x="40" y="128" width="14" height="22" rx="7" fill="#388E3C"/>
+            <rect x="56" y="128" width="14" height="22" rx="7" fill="#388E3C"/>
+            <!-- Feet -->
+            <ellipse cx="47" cy="150" rx="10" ry="7" fill="#2E7D32"/>
+            <ellipse cx="63" cy="150" rx="10" ry="7" fill="#2E7D32"/>
+            <!-- Star power glow -->
+            <circle cx="55" cy="90" r="30" fill="none" stroke="#A5D6A7" stroke-width="1" opacity="0.4" stroke-dasharray="4,3"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Monitor -->
+      <div class="monitor-wrap">
+        <div class="monitor">
+          <div class="monitor-top-bar">
+            <div class="dot red"></div>
+            <div class="dot yellow"></div>
+            <div class="dot green"></div>
+            <span class="monitor-title">🎮 AI 小學伴系統 v2.0 ★ LEGENDARY</span>
+          </div>
+          <div class="screen">
+            <div class="screen-title">【AI 小學伴指南：讓 AI 成為你的超強拍檔】</div>
+            <div class="screen-subtitle">這份指南將專業的提示工程轉化為簡單好記的「拍檔祕訣」，幫助小朋友在學習和創作時能更精準地與 AI 溝通。</div>
+
+            <div class="tips-grid">
+              <!-- Tip 1 -->
+              <div class="tip-card">
+                <div class="tip-header">
+                  <div class="tip-num">1</div>
+                  <div class="tip-label">給 AI 一個神祕身分（定義角色）</div>
+                  <div class="tip-badge">🎭 角色技能</div>
+                </div>
+                <div class="tip-secret"><strong>祕訣：</strong>告訴 AI 它是誰。如果你想寫故事，就說「你是天才作家」；如果是數學題，就說「你是溫柔的數學老師」。</div>
+                <div class="tip-try">💬 試試看：「你現在是一位很有想像力的說書人，請幫我編一個關於外星貓的故事。」</div>
+              </div>
+
+              <!-- Tip 2 -->
+              <div class="tip-card">
+                <div class="tip-header">
+                  <div class="tip-num">2</div>
+                  <div class="tip-label">說話要清楚，不能太神祕（清楚且具體）</div>
+                  <div class="tip-badge">🎯 精準技能</div>
+                </div>
+                <div class="tip-secret"><strong>祕訣：</strong>把任務說得具體一點。不要只說「寫作業」，要說出主題、時間或地點。</div>
+                <div class="tip-try">💬 試試看：「請幫我介紹台灣的特有種動物，要提到牠們住在什麼地方。」</div>
+              </div>
+
+              <!-- Tip 3 -->
+              <div class="tip-card">
+                <div class="tip-header">
+                  <div class="tip-num">3</div>
+                  <div class="tip-label">下達有力的指令動作（使用動詞）</div>
+                  <div class="tip-badge">⚡ 指令技能</div>
+                </div>
+                <div class="tip-secret"><strong>祕訣：</strong>先說你想要 AI「做什麼」，例如「列出」、「解釋」、「翻譯」或「改寫」。</div>
+                <div class="tip-try">💬 試試看：「請列出 5 個保護環境的小方法。」</div>
+              </div>
+
+              <!-- Tip 4 -->
+              <div class="tip-card">
+                <div class="tip-header">
+                  <div class="tip-num">4</div>
+                  <div class="tip-label">要求喜歡的說話口氣（要求語氣）</div>
+                  <div class="tip-badge">💬 溝通技能</div>
+                </div>
+                <div class="tip-secret"><strong>祕訣：</strong>你可以要求 AI 說話幽默、親切或者像小朋友一樣好懂。</div>
+                <div class="tip-try">💬 試試看：「請用親切且引人入勝的口氣解釋為什麼會下雨。」</div>
+              </div>
+
+              <!-- Tip 5 -->
+              <div class="tip-card">
+                <div class="tip-header">
+                  <div class="tip-num">5</div>
+                  <div class="tip-label">沒做好？那就修正再試一次（反覆迭代）</div>
+                  <div class="tip-badge">🔄 升級技能</div>
+                </div>
+                <div class="tip-secret"><strong>祕訣：</strong>如果 AI 寫得太長或太難，你可以請它「簡化內容」或「多加一點例子」。</div>
+                <div class="tip-try">💬 繼續調整直到你滿意為止！每一次練習都讓你更厲害！</div>
+              </div>
+            </div>
+
+            <!-- Power bar -->
+            <div class="power-bar-wrap">
+              <div class="power-bar-label">⚡ 學習能量 82% ── 持續練習解鎖傳說等級！</div>
+              <div class="power-bar"><div class="power-bar-fill"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="monitor-stand"></div>
+        <div class="monitor-base"></div>
+      </div>
+
+      <!-- Right Character: Shelly-inspired brawler -->
+      <div class="character char-right">
+        <div style="position:relative;">
+          <div class="bubble bubble-right">🔫 我學會了！</div>
+          <!-- Shelly-like SVG character -->
+          <svg width="110" height="160" viewBox="0 0 110 160" class="brawler">
+            <!-- Body - orange/sheriff style -->
+            <ellipse cx="55" cy="105" rx="26" ry="30" fill="#E65100"/>
+            <!-- Shirt detail -->
+            <ellipse cx="55" cy="108" rx="18" ry="20" fill="#BF360C"/>
+            <!-- Star badge -->
+            <polygon points="55,98 57,104 63,104 58,108 60,114 55,110 50,114 52,108 47,104 53,104" fill="#FFD700" opacity="0.9"/>
+            <!-- Head -->
+            <ellipse cx="55" cy="72" rx="21" ry="22" fill="#FFCC80"/>
+            <!-- Hair -->
+            <ellipse cx="55" cy="55" rx="22" ry="12" fill="#5D4037"/>
+            <rect x="33" y="55" width="8" height="18" rx="4" fill="#5D4037"/>
+            <rect x="69" y="55" width="8" height="18" rx="4" fill="#5D4037"/>
+            <!-- Eyes -->
+            <ellipse cx="47" cy="72" rx="5" ry="6" fill="white"/>
+            <ellipse cx="63" cy="72" rx="5" ry="6" fill="white"/>
+            <circle cx="48" cy="73" r="3" fill="#3E2723"/>
+            <circle cx="64" cy="73" r="3" fill="#3E2723"/>
+            <circle cx="49" cy="72" r="1" fill="white"/>
+            <circle cx="65" cy="72" r="1" fill="white"/>
+            <!-- Smile/expression -->
+            <path d="M 48 81 Q 55 87 62 81" stroke="#BF360C" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <!-- Arms -->
+            <ellipse cx="30" cy="108" rx="8" ry="18" fill="#E65100" transform="rotate(15,30,108)"/>
+            <ellipse cx="80" cy="108" rx="8" ry="18" fill="#E65100" transform="rotate(-15,80,108)"/>
+            <!-- Shotgun in right hand -->
+            <rect x="82" y="110" width="22" height="6" rx="3" fill="#424242"/>
+            <rect x="88" y="106" width="6" height="6" rx="1" fill="#616161"/>
+            <!-- Legs -->
+            <rect x="39" y="130" width="14" height="22" rx="7" fill="#BF360C"/>
+            <rect x="57" y="130" width="14" height="22" rx="7" fill="#BF360C"/>
+            <!-- Boots -->
+            <ellipse cx="46" cy="152" rx="11" ry="7" fill="#3E2723"/>
+            <ellipse cx="64" cy="152" rx="11" ry="7" fill="#3E2723"/>
+            <!-- Hat -->
+            <rect x="38" y="48" width="34" height="8" rx="4" fill="#3E2723"/>
+            <rect x="44" y="36" width="22" height="14" rx="4" fill="#4E342E"/>
+            <rect x="47" y="40" width="16" height="6" rx="2" fill="#FF8F00" opacity="0.6"/>
+          </svg>
+        </div>
+      </div>
+
+    </div><!-- end .room -->
+  </div>
+</div>
+
+<script>
+// Generate stars
+const starsContainer = document.getElementById('stars');
+for (let i = 0; i < 80; i++) {
+  const star = document.createElement('div');
+  star.className = 'star';
+  const size = Math.random() * 3 + 1;
+  star.style.cssText = `
+    width: ${size}px;
+    height: ${size}px;
+    top: ${Math.random() * 100}%;
+    left: ${Math.random() * 100}%;
+    animation-delay: ${Math.random() * 3}s;
+    animation-duration: ${1.5 + Math.random() * 2}s;
+  `;
+  starsContainer.appendChild(star);
+}
+</script>
+</body>
+</html>

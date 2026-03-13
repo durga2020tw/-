@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 學習任務 - Minecraft</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+
+  /* ── Minecraft pixel font via CSS ── */
+  @font-face {
+    font-family: 'MCFont';
+    src: local('Courier New');
+  }
+
+  :root {
+    --dirt:    #866043;
+    --grass:   #5d9e3f;
+    --stone:   #7f7f7f;
+    --wood:    #9b7c3e;
+    --gold:    #f5c542;
+    --diamond: #46ebe1;
+    --redstone:#e03030;
+    --emerald: #17dd62;
+    --sky:     #6ab0f5;
+    --night:   #0d1117;
+    --lapis:   #1a4faf;
+    --netherrack: #6e1515;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--night);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    font-family: 'Noto Sans TC', 'Courier New', monospace;
+    image-rendering: pixelated;
+    overflow-x: hidden;
+    padding: 20px 10px 40px;
+  }
+
+  /* ── pixel box-shadow border util ── */
+  .px-border {
+    box-shadow:
+      inset -3px -3px 0 rgba(0,0,0,0.5),
+      inset 3px 3px 0 rgba(255,255,255,0.25);
+  }
+
+  /* ══════════════ BACKGROUND ══════════════ */
+  .bg-wrap {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+  /* night sky */
+  .bg-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, #05090f 0%, #0d1b2a 60%, #1a2e14 100%);
+  }
+  /* stars */
+  .mc-star {
+    position: absolute;
+    width: 3px; height: 3px;
+    background: white;
+    image-rendering: pixelated;
+  }
+  /* moon */
+  .moon {
+    position: absolute;
+    top: 30px; right: 80px;
+    width: 48px; height: 48px;
+    background: #e8e8c8;
+    box-shadow: inset -6px -6px 0 #c8c8a0, inset 6px 6px 0 #f8f8e0;
+    image-rendering: pixelated;
+  }
+  /* ground blocks row */
+  .ground-row {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 48px;
+    display: flex;
+  }
+  .g-block {
+    flex: 1;
+    height: 48px;
+    border-right: 1px solid rgba(0,0,0,0.3);
+  }
+  .g-grass { background: var(--grass); box-shadow: inset 0 4px 0 #7dc452, inset 0 -2px 0 #3d7a25; }
+  .g-dirt  { background: var(--dirt);  box-shadow: inset -2px -2px 0 #5a3e22, inset 2px 2px 0 #a87e55; }
+
+  /* floating blocks decoration */
+  .deco-block {
+    position: absolute;
+    width: 36px; height: 36px;
+    image-rendering: pixelated;
+    animation: bob 3s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-10px); }
+  }
+
+  /* ══════════════ LAYOUT ══════════════ */
+  .page {
+    position: relative;
+    z-index: 1;
+    width: 1100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* ══════════════ TITLE ══════════════ */
+  .mc-title-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 18px;
+    margin-top: 10px;
+  }
+  .mc-title {
+    background: #1a1a1a;
+    border: 4px solid #555;
+    box-shadow:
+      inset -4px -4px 0 #000,
+      inset 4px 4px 0 #888,
+      0 0 0 4px #222,
+      0 6px 0 #000;
+    padding: 14px 44px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+  }
+  .mc-title-text {
+    font-family: 'Courier New', monospace;
+    font-size: 52px;
+    font-weight: 900;
+    color: #f5c542;
+    text-shadow:
+      3px 3px 0 #7a5e00,
+      6px 6px 0 #3a2c00,
+      0 0 20px #f5c54299;
+    letter-spacing: 4px;
+    line-height: 1;
+    image-rendering: pixelated;
+  }
+  .mc-title-sub {
+    font-size: 18px;
+    color: #46ebe1;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-shadow: 1px 1px 0 #0a5550, 0 0 12px #46ebe188;
+  }
+  /* corner diamonds */
+  .mc-title::before, .mc-title::after {
+    content: '◆';
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    font-size: 24px;
+    color: #46ebe1;
+    text-shadow: 0 0 10px #46ebe1;
+  }
+  .mc-title::before { left: 12px; }
+  .mc-title::after  { right: 12px; }
+
+  /* ══════════════ MAIN AREA ══════════════ */
+  .main-area {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  /* ══════════════ CHARACTER PANEL ══════════════ */
+  .char-panel {
+    width: 120px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding-top: 20px;
+  }
+  .mc-char {
+    image-rendering: pixelated;
+    animation: char-idle 1.2s steps(2) infinite;
+  }
+  @keyframes char-idle {
+    0%   { transform: rotate(-1deg); }
+    50%  { transform: rotate(1deg); }
+    100% { transform: rotate(-1deg); }
+  }
+  .char-speech {
+    background: #f0eed8;
+    border: 3px solid #333;
+    box-shadow: inset -2px -2px 0 #888, inset 2px 2px 0 #fff, 3px 3px 0 #000;
+    padding: 6px 8px;
+    font-size: 13px;
+    font-weight: 900;
+    color: #222;
+    text-align: center;
+    position: relative;
+    line-height: 1.4;
+  }
+  .char-speech::after {
+    content: '';
+    position: absolute;
+    top: -10px; left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-bottom-color: #333;
+  }
+  .char-name {
+    font-size: 13px;
+    color: #46ebe1;
+    font-weight: 700;
+    text-align: center;
+    text-shadow: 1px 1px 0 #0a5550;
+    letter-spacing: 1px;
+  }
+
+  /* ══════════════ BOOK / CONTENT PANEL ══════════════ */
+  .book-panel {
+    flex: 1;
+    background: #2a1f0e;
+    border: 5px solid #5c3d11;
+    box-shadow:
+      inset -4px -4px 0 #1a1208,
+      inset 4px 4px 0 #8a6022,
+      0 8px 0 #1a1208,
+      6px 6px 0 #000;
+    padding: 20px 24px 22px;
+    position: relative;
+  }
+  /* book spine */
+  .book-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: 18px;
+    width: 4px;
+    background: repeating-linear-gradient(180deg, #8a6022 0px, #8a6022 8px, #5c3d11 8px, #5c3d11 16px);
+    opacity: 0.6;
+  }
+
+  /* enchantment table glow effect */
+  .book-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(70,235,225,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .book-intro {
+    font-size: 17px;
+    color: #d4b896;
+    text-align: center;
+    margin-bottom: 18px;
+    margin-left: 16px;
+    line-height: 1.6;
+    font-weight: 700;
+    border-bottom: 2px solid #5c3d11;
+    padding-bottom: 12px;
+  }
+
+  /* ══════════════ TIP CARDS ══════════════ */
+  .tips-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-left: 16px;
+  }
+
+  .tip-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
+    border: 3px solid;
+    position: relative;
+  }
+  /* pixelated block corner highlights */
+  .tip-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    box-shadow: inset -3px -3px 0 rgba(0,0,0,0.4), inset 3px 3px 0 rgba(255,255,255,0.12);
+    pointer-events: none;
+  }
+
+  .tip-card:nth-child(1) { background: #3d1515; border-color: var(--redstone); }
+  .tip-card:nth-child(2) { background: #3d3100; border-color: var(--gold); }
+  .tip-card:nth-child(3) { background: #0f3d1a; border-color: var(--emerald); }
+  .tip-card:nth-child(4) { background: #0e1f3d; border-color: var(--diamond); }
+  .tip-card:nth-child(5) { background: #1a0d2e; border-color: #a855f7; }
+
+  .tip-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .tip-num {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Courier New', monospace;
+    font-size: 22px;
+    font-weight: 900;
+    flex-shrink: 0;
+    box-shadow: inset -2px -2px 0 rgba(0,0,0,0.5), inset 2px 2px 0 rgba(255,255,255,0.25), 2px 2px 0 #000;
+  }
+  .tip-card:nth-child(1) .tip-num { background: var(--redstone); color: #fff; }
+  .tip-card:nth-child(2) .tip-num { background: var(--gold);     color: #3a2c00; }
+  .tip-card:nth-child(3) .tip-num { background: var(--emerald);  color: #0a2010; }
+  .tip-card:nth-child(4) .tip-num { background: var(--diamond);  color: #082828; }
+  .tip-card:nth-child(5) .tip-num { background: #a855f7;         color: #fff; }
+
+  .tip-label {
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1.3;
+    flex: 1;
+  }
+  .tip-card:nth-child(1) .tip-label { color: #ff9999; text-shadow: 1px 1px 0 #7a0000; }
+  .tip-card:nth-child(2) .tip-label { color: #ffe87a; text-shadow: 1px 1px 0 #7a5e00; }
+  .tip-card:nth-child(3) .tip-label { color: #7af5a0; text-shadow: 1px 1px 0 #0a5a28; }
+  .tip-card:nth-child(4) .tip-label { color: #a0f0ee; text-shadow: 1px 1px 0 #0a4848; }
+  .tip-card:nth-child(5) .tip-label { color: #d4aaff; text-shadow: 1px 1px 0 #4a0a7a; }
+
+  .tip-badge {
+    font-size: 13px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border: 2px solid;
+    white-space: nowrap;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+  }
+  .tip-card:nth-child(1) .tip-badge { background: #7a000033; color: #ff9999; border-color: var(--redstone); }
+  .tip-card:nth-child(2) .tip-badge { background: #7a5e0033; color: #ffe87a; border-color: var(--gold); }
+  .tip-card:nth-child(3) .tip-badge { background: #0a5a2833; color: #7af5a0; border-color: var(--emerald); }
+  .tip-card:nth-child(4) .tip-badge { background: #0a484833; color: #a0f0ee; border-color: var(--diamond); }
+  .tip-card:nth-child(5) .tip-badge { background: #4a0a7a33; color: #d4aaff; border-color: #a855f7; }
+
+  .tip-secret {
+    font-size: 16px;
+    color: #d4b896;
+    line-height: 1.6;
+    font-weight: 700;
+    padding-left: 4px;
+  }
+  .tip-secret strong {
+    color: #f5deb3;
+    background: rgba(255,255,255,0.08);
+    padding: 0 3px;
+  }
+
+  .tip-try {
+    font-size: 15px;
+    color: #b8e0ff;
+    background: rgba(0,0,0,0.35);
+    border-left: 4px solid;
+    padding: 8px 12px;
+    line-height: 1.6;
+    font-weight: 700;
+  }
+  .tip-card:nth-child(1) .tip-try { border-color: var(--redstone); }
+  .tip-card:nth-child(2) .tip-try { border-color: var(--gold); }
+  .tip-card:nth-child(3) .tip-try { border-color: var(--emerald); }
+  .tip-card:nth-child(4) .tip-try { border-color: var(--diamond); }
+  .tip-card:nth-child(5) .tip-try { border-color: #a855f7; }
+
+  /* ══════════════ XP BAR ══════════════ */
+  .xp-bar-wrap {
+    margin-top: 16px;
+    margin-left: 16px;
+  }
+  .xp-label {
+    font-size: 15px;
+    color: var(--emerald);
+    font-weight: 900;
+    margin-bottom: 5px;
+    text-shadow: 1px 1px 0 #0a3a20;
+    letter-spacing: 1px;
+  }
+  .xp-track {
+    height: 14px;
+    background: #111;
+    border: 3px solid #555;
+    box-shadow: inset -2px -2px 0 #000, inset 2px 2px 0 #888, 2px 2px 0 #000;
+    position: relative;
+    overflow: hidden;
+  }
+  .xp-fill {
+    height: 100%;
+    width: 82%;
+    background: linear-gradient(90deg, #17dd62, #7af5a0);
+    animation: xp-pulse 1.8s ease-in-out infinite;
+    position: relative;
+  }
+  .xp-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: rgba(255,255,255,0.35);
+  }
+  @keyframes xp-pulse {
+    0%,100% { filter: brightness(1); }
+    50%      { filter: brightness(1.3); }
+  }
+
+  /* ══════════════ MONITOR FRAME ══════════════ */
+  .monitor-frame {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+  }
+  .monitor-body {
+    width: 100%;
+    background: #1c1c1c;
+    border: 5px solid #444;
+    box-shadow:
+      inset -4px -4px 0 #000,
+      inset 4px 4px 0 #666,
+      0 8px 0 #000,
+      6px 6px 0 #000;
+    overflow: hidden;
+  }
+  .monitor-bar {
+    background: #3a3a3a;
+    border-bottom: 3px solid #222;
+    box-shadow: inset 0 -2px 0 #000, inset 0 2px 0 #666;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 10px;
+  }
+  .mdot { width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.4); }
+  .mdot.r { background: #e03030; }
+  .mdot.y { background: #f5c542; }
+  .mdot.g { background: #17dd62; }
+  .mbar-title {
+    font-family: 'Courier New', monospace;
+    font-size: 15px;
+    color: #aaa;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .monitor-stand-col {
+    width: 60px; height: 28px;
+    background: #333;
+    box-shadow: inset -2px -2px 0 #111, inset 2px 2px 0 #555, 2px 2px 0 #000;
+  }
+  .monitor-foot {
+    width: 140px; height: 14px;
+    background: #2a2a2a;
+    box-shadow: inset -2px -2px 0 #111, inset 2px 2px 0 #555, 2px 2px 0 #000;
+  }
+
+</style>
+</head>
+<body>
+
+<!-- Background -->
+<div class="bg-wrap" id="bgWrap">
+  <div class="moon"></div>
+  <!-- ground -->
+  <div class="ground-row" id="groundRow"></div>
+</div>
+
+<!-- Floating deco blocks -->
+<div class="deco-block" style="top:60px;left:60px;animation-delay:0s;">
+  <svg width="36" height="36" viewBox="0 0 16 16" style="image-rendering:pixelated">
+    <rect width="16" height="16" fill="#f5c542"/>
+    <rect x="0" y="0" width="16" height="4" fill="#f8d060"/>
+    <rect x="0" y="0" width="4" height="16" fill="#f8d060"/>
+    <rect x="12" y="0" width="4" height="16" fill="#c89e1a"/>
+    <rect x="0" y="12" width="16" height="4" fill="#c89e1a"/>
+    <rect x="4" y="4" width="4" height="4" fill="#c89e1a" opacity="0.5"/>
+    <rect x="8" y="8" width="4" height="4" fill="#c89e1a" opacity="0.5"/>
+  </svg>
+</div>
+<div class="deco-block" style="top:80px;right:65px;animation-delay:1.5s;">
+  <svg width="36" height="36" viewBox="0 0 16 16" style="image-rendering:pixelated">
+    <rect width="16" height="16" fill="#46ebe1"/>
+    <rect x="0" y="0" width="16" height="3" fill="#80f5f0"/>
+    <rect x="0" y="0" width="3" height="16" fill="#80f5f0"/>
+    <rect x="13" y="0" width="3" height="16" fill="#1aada8"/>
+    <rect x="0" y="13" width="16" height="3" fill="#1aada8"/>
+  </svg>
+</div>
+<div class="deco-block" style="top:180px;left:30px;animation-delay:0.7s;">
+  <svg width="36" height="36" viewBox="0 0 16 16" style="image-rendering:pixelated">
+    <rect width="16" height="16" fill="#17dd62"/>
+    <rect x="0" y="0" width="16" height="3" fill="#50f090"/>
+    <rect x="0" y="0" width="3" height="16" fill="#50f090"/>
+    <rect x="13" y="0" width="3" height="16" fill="#0a8a3a"/>
+    <rect x="0" y="13" width="16" height="3" fill="#0a8a3a"/>
+  </svg>
+</div>
+<div class="deco-block" style="top:200px;right:30px;animation-delay:2s;">
+  <svg width="36" height="36" viewBox="0 0 16 16" style="image-rendering:pixelated">
+    <rect width="16" height="16" fill="#a855f7"/>
+    <rect x="0" y="0" width="16" height="3" fill="#c490ff"/>
+    <rect x="0" y="0" width="3" height="16" fill="#c490ff"/>
+    <rect x="13" y="0" width="3" height="16" fill="#6a1aaa"/>
+    <rect x="0" y="13" width="16" height="3" fill="#6a1aaa"/>
+  </svg>
+</div>
+
+<div class="page">
+
+  <!-- TITLE -->
+  <div class="mc-title-wrap">
+    <div class="mc-title">
+      <div class="mc-title-text">⛏ AI 學習任務 ⛏</div>
+      <div class="mc-title-sub">[ 讓 AI 成為你的超強拍檔 ]</div>
+    </div>
+  </div>
+
+  <!-- monitor wrapper -->
+  <div class="monitor-frame">
+    <div class="monitor-body">
+      <div class="monitor-bar">
+        <div class="mdot r"></div>
+        <div class="mdot y"></div>
+        <div class="mdot g"></div>
+        <span class="mbar-title">📖 AI_Guide.book — 附魔桌已開啟 ✦ LEGENDARY</span>
+      </div>
+
+      <!-- MAIN AREA inside monitor -->
+      <div style="display:flex;gap:14px;padding:18px 20px 20px;background:linear-gradient(135deg,#0d1117 0%,#111820 100%);">
+
+        <!-- LEFT CHARACTER: Steve -->
+        <div class="char-panel">
+          <div class="char-speech">🧠 學好這 5 招！成為 AI 大師！</div>
+          <!-- Minecraft Steve pixel art SVG -->
+          <svg class="mc-char" width="80" height="130" viewBox="0 0 16 26" style="image-rendering:pixelated">
+            <!-- head -->
+            <rect x="4" y="0" width="8" height="8" fill="#c68642"/>
+            <rect x="4" y="0" width="8" height="1" fill="#d4a060"/>
+            <rect x="4" y="0" width="1" height="8" fill="#d4a060"/>
+            <!-- eyes -->
+            <rect x="6" y="3" width="2" height="2" fill="#fff"/>
+            <rect x="9" y="3" width="2" height="2" fill="#fff"/>
+            <rect x="6" y="4" width="1" height="1" fill="#3a2010"/>
+            <rect x="9" y="4" width="1" height="1" fill="#3a2010"/>
+            <!-- mouth -->
+            <rect x="6" y="6" width="5" height="1" fill="#7a4020"/>
+            <!-- hair -->
+            <rect x="4" y="0" width="8" height="2" fill="#6e4820"/>
+            <rect x="4" y="0" width="2" height="4" fill="#6e4820"/>
+            <!-- body - blue shirt -->
+            <rect x="4" y="9" width="8" height="7" fill="#3355aa"/>
+            <rect x="4" y="9" width="8" height="1" fill="#4466bb"/>
+            <rect x="4" y="9" width="1" height="7" fill="#4466bb"/>
+            <rect x="11" y="9" width="1" height="7" fill="#1a3388"/>
+            <rect x="4" y="15" width="8" height="1" fill="#1a3388"/>
+            <!-- arms -->
+            <rect x="2" y="9" width="2" height="6" fill="#c68642"/>
+            <rect x="12" y="9" width="2" height="6" fill="#c68642"/>
+            <!-- legs - gray pants -->
+            <rect x="4" y="16" width="3" height="6" fill="#555"/>
+            <rect x="9" y="16" width="3" height="6" fill="#555"/>
+            <!-- boots -->
+            <rect x="4" y="22" width="3" height="4" fill="#3a2010"/>
+            <rect x="9" y="22" width="3" height="4" fill="#3a2010"/>
+          </svg>
+          <div class="char-name">▶ STEVE</div>
+        </div>
+
+        <!-- BOOK CONTENT -->
+        <div class="book-panel" style="flex:1;">
+          <div class="book-intro">
+            這份指南將專業的提示工程轉化為簡單好記的「拍檔祕訣」，<br>
+            幫助小朋友在學習和創作時能更精準地與 AI 溝通。
+          </div>
+
+          <div class="tips-list">
+
+            <!-- 1 -->
+            <div class="tip-card">
+              <div class="tip-header">
+                <div class="tip-num">1</div>
+                <div class="tip-label">給 AI 一個神祕身分（定義角色）</div>
+                <div class="tip-badge">🎭 角色技能</div>
+              </div>
+              <div class="tip-secret"><strong>祕訣：</strong>告訴 AI 它是誰。如果你想寫故事，就說「你是天才作家」；如果是數學題，就說「你是溫柔的數學老師」。</div>
+              <div class="tip-try">💬 試試看：「你現在是一位很有想像力的說書人，請幫我編一個關於外星貓的故事。」</div>
+            </div>
+
+            <!-- 2 -->
+            <div class="tip-card">
+              <div class="tip-header">
+                <div class="tip-num">2</div>
+                <div class="tip-label">說話要清楚，不能太神祕（清楚且具體）</div>
+                <div class="tip-badge">🎯 精準技能</div>
+              </div>
+              <div class="tip-secret"><strong>祕訣：</strong>把任務說得具體一點。不要只說「寫作業」，要說出主題、時間或地點。</div>
+              <div class="tip-try">💬 試試看：「請幫我介紹台灣的特有種動物，要提到牠們住在什麼地方。」</div>
+            </div>
+
+            <!-- 3 -->
+            <div class="tip-card">
+              <div class="tip-header">
+                <div class="tip-num">3</div>
+                <div class="tip-label">下達有力的指令動作（使用動詞）</div>
+                <div class="tip-badge">⚡ 指令技能</div>
+              </div>
+              <div class="tip-secret"><strong>祕訣：</strong>先說你想要 AI「做什麼」，例如「列出」、「解釋」、「翻譯」或「改寫」。</div>
+              <div class="tip-try">💬 試試看：「請列出 5 個保護環境的小方法。」</div>
+            </div>
+
+            <!-- 4 -->
+            <div class="tip-card">
+              <div class="tip-header">
+                <div class="tip-num">4</div>
+                <div class="tip-label">要求喜歡的說話口氣（要求語氣）</div>
+                <div class="tip-badge">💬 溝通技能</div>
+              </div>
+              <div class="tip-secret"><strong>祕訣：</strong>你可以要求 AI 說話幽默、親切或者像小朋友一樣好懂。</div>
+              <div class="tip-try">💬 試試看：「請用親切且引人入勝的口氣解釋為什麼會下雨。」</div>
+            </div>
+
+            <!-- 5 -->
+            <div class="tip-card">
+              <div class="tip-header">
+                <div class="tip-num">5</div>
+                <div class="tip-label">沒做好？那就修正再試一次（反覆迭代）</div>
+                <div class="tip-badge">🔄 升級技能</div>
+              </div>
+              <div class="tip-secret"><strong>祕訣：</strong>如果 AI 寫得太長或太難，你可以請它「簡化內容」或「多加一點例子」。</div>
+              <div class="tip-try">💬 繼續調整直到你滿意為止！每一次練習都讓你變得更厲害！</div>
+            </div>
+
+          </div>
+
+          <!-- XP BAR -->
+          <div class="xp-bar-wrap">
+            <div class="xp-label">✦ 學習經驗值 82 / 100 XP ── 持續練習即可升等！</div>
+            <div class="xp-track"><div class="xp-fill"></div></div>
+          </div>
+        </div>
+
+        <!-- RIGHT CHARACTER: Creeper -->
+        <div class="char-panel">
+          <div class="char-speech">💚 我也想學！讚！</div>
+          <!-- Minecraft Creeper pixel art SVG -->
+          <svg class="mc-char" width="80" height="130" viewBox="0 0 16 26" style="image-rendering:pixelated;animation-delay:0.6s">
+            <!-- head -->
+            <rect x="3" y="0" width="10" height="10" fill="#3a8c3a"/>
+            <rect x="3" y="0" width="10" height="1" fill="#50a850"/>
+            <rect x="3" y="0" width="1" height="10" fill="#50a850"/>
+            <rect x="12" y="0" width="1" height="10" fill="#1a5a1a"/>
+            <rect x="3" y="9" width="10" height="1" fill="#1a5a1a"/>
+            <!-- creeper eyes -->
+            <rect x="5" y="3" width="2" height="2" fill="#000"/>
+            <rect x="9" y="3" width="2" height="2" fill="#000"/>
+            <!-- creeper mouth -->
+            <rect x="6" y="6" width="4" height="1" fill="#000"/>
+            <rect x="6" y="7" width="1" height="2" fill="#000"/>
+            <rect x="9" y="7" width="1" height="2" fill="#000"/>
+            <rect x="7" y="7" width="2" height="1" fill="#3a8c3a"/>
+            <!-- body -->
+            <rect x="4" y="11" width="8" height="7" fill="#2d7a2d"/>
+            <rect x="4" y="11" width="8" height="1" fill="#3a8c3a"/>
+            <rect x="4" y="11" width="1" height="7" fill="#3a8c3a"/>
+            <!-- legs -->
+            <rect x="4" y="18" width="3" height="8" fill="#2d7a2d"/>
+            <rect x="9" y="18" width="3" height="8" fill="#2d7a2d"/>
+            <rect x="4" y="18" width="1" height="8" fill="#3a8c3a"/>
+            <rect x="9" y="18" width="1" height="8" fill="#3a8c3a"/>
+          </svg>
+          <div class="char-name">▶ CREEPER</div>
+        </div>
+
+      </div><!-- end main-area -->
+    </div><!-- end monitor-body -->
+    <div class="monitor-stand-col"></div>
+    <div class="monitor-foot"></div>
+  </div>
+
+</div><!-- end page -->
+
+<script>
+// Stars
+const bg = document.getElementById('bgWrap');
+for (let i = 0; i < 120; i++) {
+  const s = document.createElement('div');
+  s.className = 'mc-star';
+  const sz = Math.random() < 0.3 ? 4 : 2;
+  s.style.cssText = `width:${sz}px;height:${sz}px;top:${Math.random()*70}%;left:${Math.random()*100}%;opacity:${0.3+Math.random()*0.7}`;
+  bg.appendChild(s);
+}
+// Ground blocks
+const gr = document.getElementById('groundRow');
+const types = ['g-grass','g-grass','g-grass','g-dirt','g-grass','g-grass','g-dirt','g-grass'];
+const cols = Math.ceil(window.innerWidth / 48) + 2;
+for (let i = 0; i < cols; i++) {
+  const b = document.createElement('div');
+  b.className = `g-block ${types[i % types.length]}`;
+  gr.appendChild(b);
+}
+</script>
+</body>
+</html>
