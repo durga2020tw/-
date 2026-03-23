@@ -749,7 +749,8 @@ async function pushToSheets() {
 
     // 步驟3：將合併後的完整資料推送回試算表
     const tasks = flattenData(data);
-    const pushJson = await fetchGAS_GET(url, { action: 'write', data: JSON.stringify({ tasks }) });
+    const pushJson = await fetchGAS_GET(url, { action: 'write', data: JSON.stringify({ tasks: tasks }) });
+
     if (pushJson.success) {
       setSyncBadge('ok', '已同步 ✓');
       setTimeout(() => setSyncBadge('', ''), 3000);
